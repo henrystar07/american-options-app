@@ -4,6 +4,9 @@ import plotly.graph_objects as go
 import yfinance as yf
 from datetime import datetime
 from numba import jit
+import requests
+from functools import lru_cache
+from retrying import retry
 
 @jit(nopython=True, cache=True)
 def american_option_price(S, K, T, r, q, sigma, option_type, steps=100):
@@ -33,6 +36,36 @@ def american_option_price(S, K, T, r, q, sigma, option_type, steps=100):
     
     return option_tree[0,0]
 
+
+@retry(stop_max_attempt_number=3, wait_exponential_multiplier=1000)
+def fetch_price(ticker):
+    """增强型数据获取函数"""
+    try:
+        # 方法1：使用yfinance官方API
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period="1d", timeout=10)
+        if not hist.empty:
+            return hist['Close'].iloc[-1], stock.info.get('currency', 'USD')
+        
+        # 方法2：使用备用API
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
+        params = {"range": "1d", "interval": "1d"}
+        response = requests.get(url, params=params, timeout=10)
+        data = response.json()
+        return data['chart']['result'][0]['meta']['regularMarketPrice'], 'USD'
+        
+    except Exception as e:
+        # 方法3：使用Alpha Vantage备用源
+        av_url = "https://www.alphavantage.co/query"
+        params = {
+            "function": "GLOBAL_QUOTE",
+            "symbol": ticker,
+            "apikey": st.secrets["ALPHAVANTAGE_KEY"]
+        }
+        response = requests.get(av_url, params=params)
+        data = response.json()
+        return float(data['Global Quote']['05. price']), 'USD'
+
 def main():
     st.set_page_config(page_title="美式期权分析系统", layout="wide", page_icon="📈")
     
@@ -54,7 +87,8 @@ def main():
         T = (expiry - datetime.today().date()).days / 365
     
     try:
-        stock = yf.Ticker(ticker)
+        # stock = yf.Ticker(ticker)
+        stock = fetch_price(ticker)
         S = stock.history(period="1d")['Close'].iloc[-1]
         currency = stock.info.get('currency', 'USD')
     except:
