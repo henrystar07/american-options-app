@@ -9,11 +9,10 @@ import requests
 from functools import lru_cache
 from retrying import retry
 
-os.environ["HTTPS_PROXY"] = "http://127.0.0.1:49633"  # HTTP代理
-os.environ["HTTP_PROXY"] = "http://127.0.0.1:49633"  # HTTP代理
+
 proxies = {
-    "http": os.environ["HTTP_PROXY"],
-    "https": os.environ["HTTPS_PROXY"]
+    "http": st.secrets.["proxy"]["http"],
+    "https": st.secrets.["proxy"]["https"]
 }
 @jit(nopython=True, cache=True)
 def american_option_price(S, K, T, r, q, sigma, option_type, steps=100):
@@ -49,7 +48,7 @@ def fetch_price(ticker):
     """增强型数据获取函数"""
     try:
         # 方法1：使用yfinance官方API
-        stock = yf.Ticker(ticker, proxy=os.environ["HTTPS_PROXY"])
+        stock = yf.Ticker(ticker, proxy=proxies["https"])
         hist = stock.history(period="1d", timeout=10)
         if not hist.empty:
             return hist['Close'].iloc[-1], stock.info.get('currency', 'USD')
