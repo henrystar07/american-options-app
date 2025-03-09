@@ -89,8 +89,8 @@ def main():
     try:
         # stock = yf.Ticker(ticker)
         stock = fetch_price(ticker)
-        S = stock.history(period="1d")['Close'].iloc[-1]
-        currency = stock.info.get('currency', 'USD')
+        S = stock[0]
+        currency = stock[1]
     except:
         st.error("标的代码无效或数据不可用")
         return
