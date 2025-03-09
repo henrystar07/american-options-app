@@ -1,3 +1,5 @@
+ALPHAVANTAGE_KEY = " QHKR4ZCR9RVDLQOE"
+
 [server]
 port = 8501
 maxUploadSize = 200

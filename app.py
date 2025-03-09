@@ -11,8 +11,8 @@ from retrying import retry
 
 
 proxies = {
-    "http": st.secrets.["proxy"]["http"],
-    "https": st.secrets.["proxy"]["https"]
+    "http": st.secrets["proxy"]["http"],
+    "https": st.secrets["proxy"]["https"]
 }
 @jit(nopython=True, cache=True)
 def american_option_price(S, K, T, r, q, sigma, option_type, steps=100):
