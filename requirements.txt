@@ -1,0 +1,7 @@
+streamlit==1.29.0
+plotly==5.18.0
+yfinance==0.2.31
+numpy==1.26.0
+pandas==2.1.1
+numba==0.58.1
+python-dateutil==2.8.2
