@@ -1,5 +1,6 @@
 import streamlit as st
 import numpy as np
+import os
 import plotly.graph_objects as go
 import yfinance as yf
 from datetime import datetime
@@ -8,6 +9,12 @@ import requests
 from functools import lru_cache
 from retrying import retry
 
+os.environ["HTTPS_PROXY"] = "http://127.0.0.1:49633"  # HTTP代理
+os.environ["HTTP_PROXY"] = "http://127.0.0.1:49633"  # HTTP代理
+proxies = {
+    "http": os.environ["HTTP_PROXY"],
+    "https": os.environ["HTTPS_PROXY"]
+}
 @jit(nopython=True, cache=True)
 def american_option_price(S, K, T, r, q, sigma, option_type, steps=100):
     dt = T/steps
@@ -42,7 +49,7 @@ def fetch_price(ticker):
     """增强型数据获取函数"""
     try:
         # 方法1：使用yfinance官方API
-        stock = yf.Ticker(ticker)
+        stock = yf.Ticker(ticker, proxy=os.environ["HTTPS_PROXY"])
         hist = stock.history(period="1d", timeout=10)
         if not hist.empty:
             return hist['Close'].iloc[-1], stock.info.get('currency', 'USD')
@@ -50,7 +57,7 @@ def fetch_price(ticker):
         # 方法2：使用备用API
         url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
         params = {"range": "1d", "interval": "1d"}
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(url, params=params, timeout=10, proxies=proxies)
         data = response.json()
         return data['chart']['result'][0]['meta']['regularMarketPrice'], 'USD'
         
@@ -62,7 +69,7 @@ def fetch_price(ticker):
             "symbol": ticker,
             "apikey": st.secrets["ALPHAVANTAGE_KEY"]
         }
-        response = requests.get(av_url, params=params)
+        response = requests.get(av_url, params=params, proxies=proxies)
         data = response.json()
         return float(data['Global Quote']['05. price']), 'USD'
 
